@@ -7,9 +7,10 @@
 # SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
 from supabase import create_client, Client
+import streamlit as st
 
-SUPABASE_URL = "https://wmcppeiutkzrxrgwguvm.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtY3BwZWl1dGt6cnhyZ3dndXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ1ODc0MTgsImV4cCI6MjA4MDE2MzQxOH0.nb4J58HBMx5MfFFky1KNstzqzCMiTehfNEVAsp7Egu0"
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
