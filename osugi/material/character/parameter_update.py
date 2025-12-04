@@ -70,4 +70,4 @@ def apply_parameter_update(user_id_text: str, genre_index: int, status: str, pag
         else:
             updated["evolution"] = pages  # もし存在しない/Noneなら初期化
 
-    return updated
+    return char, updated
