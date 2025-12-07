@@ -1,0 +1,20 @@
+cookie:
+  expiry_days: 1
+  key: some_signature_key
+  name: some_cookie_name
+credentials:
+  usernames:
+    A12345:
+      email: johndoe@example.com
+      name: JohnDoe
+      password: $2b$12$nc2pj2qc4isNrEgNnqbWNe60UvXLneh163TKOlrPF0nb3/njf1kxu
+    a.masaharu:
+      email: a.masaharu0712@gmail.com
+      name: まさはる
+      password: $2b$12$XzOa/ua2DXOjPGEq0whdquDJaHwPNRvoTqqUhl/q533qN1Rs2qlRW
+login:
+  fields:
+    login: ログイン
+    password: パスワード
+    username: ユーザー名
+  title: ログイン
