@@ -1,0 +1,160 @@
+import requests
+import cv2
+import re
+import xmltodict
+
+# 本のバーコードを読取って、ISBNコードを返す関数
+# 参考：https://js2iiu.com/2025/01/08/streamlit-barcode-api/
+def barcode_scanner(placeholder):
+
+    # カメラデバイスに接続（0は内蔵カメラ）
+    cap = cv2.VideoCapture(0)
+
+    # バーコードリーダーを作成
+    barcode_reader = cv2.barcode.BarcodeDetector()
+
+    # 検出されたバーコード情報を格納する集合
+    detected_codes = set()
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # OpenCVはBGRフォーマットなので、RGBに変換
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # バーコード情報を取得
+        try:
+            # バーコードを検出
+            ok, decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame) # type: ignore
+        except ValueError:
+            decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame)
+            ok = bool(decoded_info)
+
+        if len(decoded_info) > 2:
+            detected_codes.add(f'{decoded_info}')
+
+        # プレースホルダーに画像を表示
+        placeholder.image(frame, channels="RGB")
+
+        # バーコードが検出されたらループを終了
+        if len(detected_codes) >= 2:
+            for code in detected_codes:
+                isbn_code = None
+                if code.startswith(('978', '979')):  # ISBNは978 または 979 で始まる
+                    isbn_code = code
+                    break
+
+            # カメラ映像を消す
+            placeholder.empty()
+            break
+
+    cap.release()
+
+    return isbn_code
+
+
+# 著者名を成形する関数
+def clean_creator(creator):
+    # creator が文字列の場合
+    if isinstance(creator, str):
+        creators = [creator]
+    # 複数著者の場合はリストで渡される
+    elif isinstance(creator, list):
+        creators = creator
+    else:
+        return ""
+
+    cleaned = []
+    for c in creators:
+        # 姓と名の間のカンマを削除（例: "山田, 太郎" → "山田 太郎"）
+        name = c.replace(",", "")
+
+        # 誕生年の除去（例: "山田 太郎 1972-" → "山田 太郎"）
+        name = re.sub(r"\s*\d{4}-", "", name)
+
+        # 前後の余分な空白を削除
+        name = name.strip()
+
+        cleaned.append(name)
+
+    # 複数著者はカンマ区切りで結合
+    return ", ".join(cleaned)
+
+
+# NDC10の請求記号から第一次区分を取得する関数
+def ndc10_first_level(call_number):
+    # NDC10 第一次区分
+    ndc10_lv1 = {
+        "0": "総記",
+        "1": "哲学",
+        "2": "歴史",
+        "3": "社会科学",
+        "4": "自然科学",
+        "5": "技術.工学",
+        "6": "産業",
+        "7": "芸術.美術",
+        "8": "言語",
+        "9": "文学",
+    }
+
+    # 先頭が数字かどうか確認。レスポンスにデータが無ければNoneの場合もある。
+    if not call_number or not call_number[0].isdigit():
+        return "不明"
+
+    # 対応表にある区分を返す
+    first_digit = call_number[0] #文字列の1桁目
+    return ndc10_lv1.get(first_digit, "不明")
+
+
+# ISBNを使って国立国会図書館検索APIから書誌情報を取得
+# 参考：https://qiita.com/yknm1989/items/f77d22e1c7f1347d79b0
+def get_api_book_info(isbn):
+    # NDLサーチAPIのエンドポイントURL
+    base_url = "https://iss.ndl.go.jp/api/opensearch"
+
+    # APIリクエストのパラメータ
+    params = {
+        'isbn': isbn,
+        'format': 'xml'
+    }
+
+    # リクエストを取得
+    response = requests.get(base_url, params=params)
+
+    # XMLを辞書型に変換
+    book_info = xmltodict.parse(response.text)
+
+    # call_number（請求記号）としてNDC10分類コードを取得
+    subject = book_info['rss']['channel']['item']['dc:subject'] # 複数の分類区分の情報を含む
+    # 優先順位リスト 本によってはNDC10が無い場合もあるため、NDC9, NDC8も順に確認
+    ndc_priority = ["dcndl:NDC10", "dcndl:NDC9", "dcndl:NDC8"]
+
+    call_number = None
+    for ndc_type in ndc_priority:
+        for item in subject:
+            if isinstance(item, dict) and item.get('@xsi:type') == ndc_type:
+                call_number = item.get('#text')
+                break
+        if call_number:
+            break
+
+    # publsiherは1社の場合は文字列、複数の場合は文字列のリストなので、辞書作成時に三項演算子で処理できるように事前定義
+    publisher = book_info['rss']['channel']['item']['dc:publisher']
+
+    # 入れ子になった辞書型を整理し、必要な情報のみ取得
+    dict_api_book_info = {
+    "isbn": isbn, # ISBN
+    "title": book_info['rss']['channel']['item']['dc:title'], #タイトル
+    "title_kana": book_info['rss']['channel']['item']['dcndl:titleTranscription'], #タイトルカナ表記
+    "author": clean_creator(book_info['rss']['channel']['item']['dc:creator']), # 作者
+    "author_kana": clean_creator(book_info['rss']['channel']['item']['dcndl:creatorTranscription']), # 作者カナ表記
+    "pages": int(book_info['rss']['channel']['item']['dc:extent'].rstrip("p").split(",")[-1]), # ページ数：末尾の'p'を除いて数値に変換
+    # ページ数：前書き・目次と本編のページ数が2つ記載されているケース（'28,386p'）があったので、カンマで分割して最期の数字を取得。常に最後を取得でいいかは保障無し。
+    "call_number": call_number, # 請求記号のうちNDC10分類コード
+    "genre": ndc10_first_level(call_number), # NDC10 第一次区分
+    "publisher": ", ".join(publisher) if isinstance(publisher, list) else publisher, # 出版社
+    }
+
+    return dict_api_book_info
