@@ -4,15 +4,12 @@ from supabase import create_client, Client
 import os
 import sys
 
-# ⚠️ 修正箇所: ハードコードされた接続情報を削除 ----------------------------------
+# 【注意】ここをご自身の情報に置き換えてください
+SUPABASE_URL = "https://wmcppeiutkzrxrgwguvm.supabase.co" 
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtY3BwZWl1dGt6cnhyZ3dndXZtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDU4NzQxOCwiZXhwIjoyMDgwMTYzNDE4fQ.RnAl8nkeMuLXUptiaznC2AKfgdR7XN_nhp78dH59saA" 
 
-# secrets.tomlから情報を読み込む
-try:
-    SUPABASE_URL = st.secrets["SUPABASE_URL"]
-    SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-except KeyError:
-    # 接続情報が見つからない場合のエラー処理
-    st.error("エラー: .streamlit/secrets.toml に Supabase の接続情報が記述されていません。ファイルを確認してください。")
+if SUPABASE_URL == "YOUR_SUPABASE_URL" or SUPABASE_KEY == "YOUR_SUPABASE_KEY":
+    st.error("エラー: Supabase接続情報 (URL および KEY) をコード内に記述してください。")
     st.stop()
 
 

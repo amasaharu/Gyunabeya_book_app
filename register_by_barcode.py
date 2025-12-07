@@ -17,7 +17,7 @@ JST = timezone(timedelta(hours=9))
 user_id = "test_user_01"
 
 # アプリ処理開始
-st.title('本のバーコードから登録・編集')
+st.title('バーコードで登録')
 
 # 初回のみカメラ起動してISBNを取得
 if "isbn_code" not in st.session_state:
@@ -44,30 +44,20 @@ if "isbn_code" not in st.session_state:
                 st.error("再試行してもISBNを読み取れませんでした。")
 
 # ISBNが取得できていれば書誌情報を取得（初回のみ）
-if "isbn_code" in st.session_state and "dict_book_info_before" not in st.session_state:
-    # Supabaseに登録済みの本か確認。Supabaseからuser_idとISBNで検索
-    same_isbn_book = supabase.table("book").select("*").eq("user_id", user_id).eq("isbn", st.session_state["isbn_code"]).execute()
-
-    if same_isbn_book.data and len(same_isbn_book.data) > 0: # 登録済みの本の場合
-        # 既存レコードを編集対象にする
-        dict_book_info_before = same_isbn_book.data[0]
-        st.info("既存データを取得しました。編集して更新できます。")
-    else: # 未登録の本の場合
-        # 別ファイルで定義しているget_api_book_info関数を呼び出して、APIからISBNコードを使って書誌情報を新規取得
-        dict_book_info_before = get_api_book_info(st.session_state["isbn_code"])
-        st.info("APIから新規データを取得しました。")
-
-    st.session_state["dict_book_info_before"] = dict_book_info_before
+if "isbn_code" in st.session_state and "dict_api_book_info" not in st.session_state:
+    # 別ファイルで定義しているget_api_book_info関数を呼び出して、ISBNコードを使って書誌情報を取得
+    dict_api_book_info = get_api_book_info(st.session_state["isbn_code"])
+    st.session_state["dict_api_book_info"] = dict_api_book_info
 
 # 書誌情報がある場合は編集フォームを表示
-if "dict_book_info_before" in st.session_state:
-    dict_book_info_before = st.session_state["dict_book_info_before"]
+if "dict_api_book_info" in st.session_state:
+    dict_api_book_info = st.session_state["dict_api_book_info"]
 
-    # dict_book_info_before をベースに dict_book_info_after を作成
-    dict_book_info_after = dict_book_info_before.copy()
+    # dict_api_book_info をベースに dict_edited_book_info を作成
+    dict_edited_book_info = dict_api_book_info.copy()
 
     # 編集不要なキー
-    fixed_keys = ['isbn', 'pages', 'call_number', 'genre', 'book_id', 'user_id', 'created_at', 'updated_at']
+    fixed_keys = ['isbn', 'pages', 'call_number', 'genre']
     # 表示用ラベル
     dict_book_info_label = {
         "title": "タイトル",
@@ -78,74 +68,52 @@ if "dict_book_info_before" in st.session_state:
     }
 
     # 編集可能なキーだけ text_input に展開
-    for key, value in dict_book_info_before.items():
-        if key in dict_book_info_label: # text_inputで上書き編集可能にする
-            dict_book_info_after[key] = st.text_input(
+    input_keys = []  # ← リセット対象を記録
+    for key, value in dict_api_book_info.items():
+        if key not in fixed_keys: # text_inputで上書き編集可能にする
+            widget_key = f"input_{key}"
+            dict_edited_book_info[key] = st.text_input(
                 label=dict_book_info_label[key],
-                value=str(value) if value is not None else "",
+                value=str(value),
+                key=widget_key
             )
+            input_keys.append(widget_key)
 
-    # APIで取得できない追加情報を入力フォームで追加。既存データがあれば初期値に設定。
-    dict_book_info_after["label"] = st.text_input("レーベル", value=dict_book_info_before.get("label", ""))
-    dict_book_info_after["purchase_or_library"] = st.radio("購入/図書館", ["購入", "図書館"],
-                                                            index=["購入", "図書館"].index(dict_book_info_before.get("purchase_or_library", "購入")))
-    dict_book_info_after["paper_or_digital"] = st.radio("紙/電子書籍", ["紙", "電子書籍"],
-                                                        index=["紙", "電子書籍"].index(dict_book_info_before.get("paper_or_digital", "紙")))
-    dict_book_info_after["read_status"] = st.radio("読書状況", ["未読", "読書中", "読了"],
-                                                    index=["未読", "読書中", "読了"].index(dict_book_info_before.get("read_status", "未読")))
+    # APIで取得できない追加情報を入力フォームで追加
+    dict_edited_book_info["label"] = st.text_input("レーベル", key="input_label")
+    dict_edited_book_info["purchase_or_library"] = st.radio("購入/図書館", ["購入", "図書館"], key="input_purchase_or_library")
+    dict_edited_book_info["paper_or_digital"] = st.radio("紙/電子書籍", ["紙", "電子書籍"], key="input_paper_or_digital")
+    dict_edited_book_info["read_status"] = st.radio("読書状況", ["未読", "読書中", "読了"], key="input_read_status")
 
-    # 読み始めた日　st.date_input では空欄にできないので「入力する」選択肢を追加
-    started_at_val = dict_book_info_before.get("started_at")
-    completed_flag_start = st.checkbox("読み始めた日を入力する", value=started_at_val is not None)
+    # st.date_input では空欄にできないので「入力する」選択肢を追加
+    completed_flag_start = st.checkbox("読み始めた日を入力する")
     if completed_flag_start:
-        dict_book_info_after["started_at"] = st.date_input(
-            "読み始めた日",
-            value=datetime.fromisoformat(started_at_val) if started_at_val else datetime.now(JST)
-        ).isoformat()
+        dict_edited_book_info["started_at"] = st.date_input("読み始めた日", key="input_started_at")
+        dict_edited_book_info["started_at"] = dict_edited_book_info["started_at"].isoformat()
     else:
-        dict_book_info_after["started_at"] = None
+        dict_edited_book_info["started_at"] = None
 
     # 読了日　st.date_input では空欄にできないので「入力する」選択肢を追加
-    completed_at_val = dict_book_info_before.get("completed_at")
-    completed_flag_complete = st.checkbox("読了日を入力する", value=completed_at_val is not None)
+    completed_flag_complete = st.checkbox("読了日を入力する")
     if completed_flag_complete:
-        dict_book_info_after["completed_at"] = st.date_input(
-            "読了日",
-            value=datetime.fromisoformat(completed_at_val) if completed_at_val else datetime.now(JST)
-        ).isoformat()
+        dict_edited_book_info["completed_at"] = st.date_input("読了日", key="input_completed_at")
+        dict_edited_book_info["completed_at"] = dict_edited_book_info["completed_at"].isoformat()
     else:
-        dict_book_info_after["completed_at"] = None
+        dict_edited_book_info["completed_at"] = None
 
-    # レビュー
-    dict_book_info_after["review"] = st.text_area("レビュー", value=dict_book_info_before.get("review", ""))
+    dict_edited_book_info["review"] = st.text_area("レビュー", key="input_review")
     # 選択肢が「公開する」なら True、そうでなければ False
-    dict_book_info_after["review_published"] = (st.radio("レビュー公開設定", ["公開する", "公開しない"],
-                                                index=0 if dict_book_info_before.get("review_published", False) else 1
-                                                ) == "公開する"                                                )
+    dict_edited_book_info["review_published"] = (st.radio("レビュー公開設定", ["公開する", "公開しない"], key="input_review_published") == "公開する")
 
     # 確認用（完成品では消す）
-    st.write("登録内容（完成時は消す）:", dict_book_info_after)
+    st.write("登録内容（完成時は消す）:", dict_edited_book_info)
 
     # 登録ボタン
     if st.button("登録"):
-        dict_book_info_after['user_id'] = user_id
-        same_isbn_book_id = supabase.table("book").select("book_id").eq("user_id", user_id).eq("isbn", dict_book_info_after["isbn"]).execute()
-        # 既存レコードがある場合
-        if same_isbn_book_id.data and len(same_isbn_book_id.data) > 0:
-            # 更新処理
-            dict_book_info_after['updated_at'] = datetime.now(JST).isoformat()
-            book_id = same_isbn_book_id.data[0]["book_id"]
-            supabase.table("book").update(dict_book_info_after).eq("book_id", book_id).execute()
-            st.success("更新しました！")
-        else:
-            # 新規登録
-            dict_book_info_after["prev_status"] = 0
-            status_map = {"未読": 1, "読書中": 2, "読了": 3}
-            dict_book_info_after["new_status"] = status_map[dict_book_info_after["read_status"]]
-            dict_book_info_after['created_at'] = datetime.now(JST).isoformat()
-            supabase.table("book").insert(dict_book_info_after).execute()
-            st.success("登録しました！")
-
+        dict_edited_book_info['user_id'] = user_id # DB登録用にuser_idを追加
+        dict_edited_book_info['created_at'] = datetime.now(JST).isoformat() # 登録日時を追加
+        supabase.table("book").insert(dict_edited_book_info).execute()
+        st.success("登録しました！")
         st.session_state["registered"] = True
 
     # 登録成功後だけ「別の本を登録する」ボタンを表示
