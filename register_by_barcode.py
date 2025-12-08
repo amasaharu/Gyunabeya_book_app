@@ -3,6 +3,7 @@ from datetime import datetime, timezone, timedelta
 from supabase import create_client, Client
 
 from register_by_barcode_func import barcode_scanner, get_api_book_info
+from parameter_update import apply_parameter_update
 
 # Supabase呼び出し
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -148,6 +149,16 @@ if "dict_book_info_before" in st.session_state:
             dict_book_info_after['created_at'] = datetime.now(JST).isoformat()
             supabase.table("book").insert(dict_book_info_after).execute()
             st.success("登録しました！")
+
+    # --- キャラクター更新処理（呼び出し） ---
+        char, updated, msg = apply_parameter_update(
+            user_id_text=user_id,
+            genre_name=dict_book_info_after.get("genre", ""),
+            prev_status=dict_book_info_after["prev_status"],
+            new_status=dict_book_info_after["new_status"],
+            pages=dict_book_info_after.get("pages", 0)
+        )
+        st.info(msg)
 
         st.session_state["registered"] = True
 
