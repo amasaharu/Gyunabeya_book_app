@@ -1,6 +1,12 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
+from update_evolution import update_evolution
+from generate_monster_prompt import generate_monster_prompt
+from upload_monster_image import upload_monster_image
+from create_monster_fig import create_monster_fig
+from convert_status_to_japanese import convert_status_to_japanese
+from create_character_name import create_character_name
 
 # Supabase設定
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -52,6 +58,7 @@ else:
     monster_url = "https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/default_monster.png"
 
 frame_url = "https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/monster_flame.png"
+
 
 # 画像表示
 st.markdown(
@@ -148,14 +155,49 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+# generate_monster_promptの前処理。label_mapに対応するキーだけ抽出
+status_keys = list(label_map.keys())
+filtered_row = {k: row.get(k, 0) for k in status_keys}
+
+# species_mappingは別途取得しておく
+mapping_rows = supabase.table("species_mapping").select("*").execute().data
+
 # 3列に分けて真ん中にボタンを置く
-col1, col2, col3 = st.columns([4, 2, 4])  # 左右を広めに
+col1, col2, col3 = st.columns([4, 2, 4])
 with col2:
     disabled_flag = evolution_value < 1000
     if st.button("進化する", disabled=disabled_flag):
-        if not disabled_flag:
-            st.success("進化が始まります！")
+        # 1. revolution値を減らす
+        updated_row = update_evolution(row, decrement=1000)
+        if updated_row:
+            # st.success("evolution値を更新しました！")
 
+            # ステータスを日本語表現に変換
+            description = convert_status_to_japanese(updated_row)
+            # st.write(description)
+
+            prompt_image, prompt_name = generate_monster_prompt(filtered_row, mapping_rows, description)
+            # st.write("生成プロンプト:", prompt_image)
+
+            character_name = create_character_name(prompt_name)
+            # st.write("生成された名前:", character_name)
+
+            supabase.table("character").update({"character_name": character_name}).eq("user_id_text", updated_row["user_id_text"]).execute()
+
+            image_url, image_stream = create_monster_fig(prompt_image, character_name)
+
+            # ファイル保存（Supabaseアップロード用）
+            evolution_count = updated_row.get("evolution_count", 0)
+            file_name = f"{updated_row['user_id_text']}_{evolution_count}.png"
+            with open(file_name, "wb") as f:
+                f.write(image_stream.getbuffer())
+
+            # 画像アップロード＆URL更新
+            new_url = upload_monster_image(file_name, updated_row["user_id_text"], evolution_count)
+            # st.write("新しい画像URL:", new_url)
+
+            st.rerun()
 
 st.markdown(
     """
@@ -163,7 +205,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
 
 if row:    
     # その下にテーブル表示
@@ -204,8 +245,8 @@ st.markdown(
 
 import plotly.graph_objects as go
 
-# labels = [label_map[k] for k in keys_to_show]
-# values = [row.get(k, 0) for k in keys_to_show]
+labels = [label_map[k] for k in keys_to_show]
+values = [row.get(k, 0) for k in keys_to_show]
 
 labels = ["攻撃","防御","素早さ","魅力","知力","集中","魔力","閃き","愛情","運"]
 values = [3,5,2,7,4,6,1,8,5,9]
