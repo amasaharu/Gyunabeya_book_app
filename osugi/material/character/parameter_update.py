@@ -34,7 +34,7 @@ def apply_parameter_update(
     """
 
     # ステータスが後退している場合は処理しない
-    if prev_status > new_status:
+    if prev_status >= new_status:
         return {}, {}, f"処理スキップ: prev_status({prev_status}) > new_status({new_status}) のため更新しません。"
 
     # 1. キャラクター取得
