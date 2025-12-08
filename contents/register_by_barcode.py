@@ -2,8 +2,8 @@ import streamlit as st
 from datetime import datetime, timezone, timedelta
 from supabase import create_client, Client
 
-from register_by_barcode_func import barcode_scanner, get_api_book_info
-from parameter_update import apply_parameter_update
+from utils.register_by_barcode_func import barcode_scanner, get_api_book_info
+from utils.parameter_update import apply_parameter_update
 
 # Supabase呼び出し
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
