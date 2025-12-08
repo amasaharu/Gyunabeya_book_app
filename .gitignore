@@ -214,3 +214,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+osugi/material/character/.streamlit/secrets.toml
+osugi/material/character/test_pic_small.png
+osugi/material/character/pic_regist.py
