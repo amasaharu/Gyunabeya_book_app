@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
-from update_evolution import update_evolution
-from generate_monster_prompt import generate_monster_prompt
-from upload_monster_image import upload_monster_image
-from create_monster_fig import create_monster_fig
-from convert_status_to_japanese import convert_status_to_japanese
-from create_character_name import create_character_name
+from utils.update_evolution import update_evolution
+from utils.generate_monster_prompt import generate_monster_prompt
+from utils.upload_monster_image import upload_monster_image
+from utils.create_monster_fig import create_monster_fig
+from utils.convert_status_to_japanese import convert_status_to_japanese
+from utils.create_character_name import create_character_name
 
 # Supabase設定
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
@@ -248,8 +248,8 @@ import plotly.graph_objects as go
 labels = [label_map[k] for k in keys_to_show]
 values = [row.get(k, 0) for k in keys_to_show]
 
-labels = ["攻撃","防御","素早さ","魅力","知力","集中","魔力","閃き","愛情","運"]
-values = [3,5,2,7,4,6,1,8,5,9]
+# labels = ["攻撃","防御","素早さ","魅力","知力","集中","魔力","閃き","愛情","運"]
+# values = [3,5,2,7,4,6,1,8,5,9]
 
 
 # 最大値を動的に決定（例：次の10単位に丸める）
