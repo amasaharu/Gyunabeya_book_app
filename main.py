@@ -4,6 +4,9 @@ import streamlit_authenticator as stauth
 import yaml
 from yaml.loader import SafeLoader
 
+if "page" in st.session_state and st.session_state["page"] == "main":
+    pass
+
 bg_url = "https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/character_background_5.png"
 st.markdown(f"""
 <style>
@@ -13,6 +16,61 @@ st.markdown(f"""
     background-position: center;
     background-attachment: fixed;
 }}
+</style>
+""", unsafe_allow_html=True)
+
+# CSSでボタンを中央＆金色に
+st.markdown(
+    """
+    <style>
+    div.stButton > button:first-child {
+        display: block;       /* ブロック要素にする */
+        margin: 0 auto;       /* 左右の余白を自動にして中央寄せ */
+        background-color: #b8860b; /* dark goldenrod */
+        box-shadow: 0 0 5px #b8860b;
+        background: linear-gradient(
+        90deg,
+        #cfa94f 25%,
+        #e0c170 50%,
+        #cfa94f 75%
+        );
+        color: black;
+        font-weight: bold;
+        border-radius: 8px;
+        font-size: 1.6rem;
+        padding: 10px 20px;
+        border: none;
+    }
+    div.stButton > button:first-child:disabled {
+        background: #ccc !important;   /* ← グラデーションを完全に上書き */
+        color: #666 !important;
+        cursor: not-allowed;
+        box-shadow: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.markdown("""
+<style>
+/* 🔽 Streamlit Authenticator のログインボタン専用CSS */
+div[data-testid="stForm"] button {
+    background-color: #b8860b !important;
+    background: linear-gradient(
+        90deg,
+        #cfa94f 25%,
+        #e0c170 50%,
+        #cfa94f 75%
+    ) !important;
+    color: black !important;
+    font-weight: bold !important;
+    border-radius: 8px !important;
+    font-size: 1.6rem !important;
+    padding: 10px 20px !important;
+    border: none !important;
+    box-shadow: 0 0 5px #b8860b !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -63,5 +121,5 @@ elif status is False:
     st.error('ユーザーIDかパスワードが間違っています')
 else:
     if st.button("ユーザー登録", key="go_register"):
-        st.switch_page("register_user")
+        st.switch_page("pages/register_user.py")
     # st.warning('ユーザーIDとパスワード、入力できましたか？')
