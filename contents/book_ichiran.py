@@ -4,7 +4,7 @@ from supabase import create_client, Client
 import sys
 
 # =================================================================
-# 💡 ステータス対応表の定義（0-3の詳細な定義）
+# 💡 ステータス対応表の定義
 # =================================================================
 
 # 数値から日本語へのマップ
@@ -15,7 +15,7 @@ STATUS_MAP_FULL = {
     3: "読了 (レビュー登録済み)"
 }
 
-# 💡 修正: 一覧表示や画面表示で使用するシンプルな日本語マップ
+# 💡 一覧表示や画面表示で使用するシンプルな日本語マップ
 STATUS_MAP_SIMPLE = {
     0: "未読",
     1: "読書中",
@@ -66,7 +66,13 @@ def fetch_user_books(user_id: str):
             .select(columns_to_select) \
             .eq("user_id", user_id) \
             .execute()
-        return response.data
+        
+        # DataFrameに変換し、NaNを処理するロジックを再挿入
+        df = pd.DataFrame(response.data)
+        if 'isbn' in df.columns:
+            df['isbn'] = df['isbn'].fillna('').astype(str) 
+            
+        return df.to_dict('records') # dictのリストで返すように統一
 
     except Exception as e:
         st.error(f"データの取得中にエラーが発生しました: {e}")
@@ -74,7 +80,7 @@ def fetch_user_books(user_id: str):
 
 def fetch_book_detail(book_id: str):
     """指定されたbook_idの詳細データを取得する。"""
-    # 💡 prev_status, new_status を取得項目に追加
+    # 💡 修正: previous_status を正しいカラム名である prev_status に修正
     columns_to_select = "book_id, user_id, isbn, title, author, pages, genre, publisher, purchase_or_library, paper_or_digital, read_status, review, prev_status, new_status"
     try:
         response = supabase.table("book").select(columns_to_select).eq("book_id", book_id).execute()
@@ -168,8 +174,7 @@ def display_book_detail(book_id):
     # ----------------- 2. ステータスの確認・更新 (数値ベース) -----------------
     st.subheader("ステータスの確認・更新")
 
-    # 💡 修正: prev_status (数値) を取得し、シンプルな日本語に変換して表示
-    # 現在のステータス = prev_status の値
+    # 💡 prev_status (数値) を取得し、シンプルな日本語に変換して表示
     current_numerical_status = book_detail.get('prev_status', 0)
     current_japanese_status_simple = STATUS_MAP_SIMPLE.get(current_numerical_status, '不明')
     
@@ -199,7 +204,7 @@ def display_book_detail(book_id):
     # 選択された日本語（詳細）を、データベースに書き込む数値 (0, 1, 2, 3) に変換
     new_numerical_status = STATUS_REVERSE_MAP.get(new_japanese_status_full)
     
-    # 💡 修正: read_statusに書き込むシンプルな日本語を決定
+    # 💡 read_statusに書き込むシンプルな日本語を決定
     new_japanese_status_simple = STATUS_MAP_SIMPLE.get(new_numerical_status, '不明')
 
 
@@ -247,18 +252,21 @@ st.set_page_config(layout="wide")
 if 'page' not in st.session_state:
     st.session_state['page'] = 'list'
 
-if 'user_id' not in st.session_state:
-    st.session_state['user_id'] = ""
+# 💡 ユーザーIDのキーを 'username' に設定
+if 'username' not in st.session_state:
+    st.session_state['username'] = None 
 
-current_user_id = st.text_input(
-    "データを取得するユーザーIDを入力してください", 
-    value=st.session_state['user_id'], 
-    key="user_id_input"
-)
-st.session_state['user_id'] = current_user_id
+# 💡 user_id をセッションステートの 'username' から直接取得
+current_user_id = st.session_state['username'] 
 
 
 # === 画面の切り替え処理 ===
+
+# 💡 【修正されたロジック】 current_user_idがNone（取得失敗）の場合に、テストユーザーを設定
+if current_user_id is None:
+    current_user_id = "test_user_osugi" # ★ 代替としてデフォルトのテストユーザーを設定
+    st.warning(f"⚠️ ユーザーIDがセッション ('username' キー) から取得できませんでした。代替としてテストユーザー **{current_user_id}** を使用します。")
+    # 処理は中断せず、テストユーザーで続行する。
 
 if st.session_state['page'] == 'list':
     # 一覧画面の表示
