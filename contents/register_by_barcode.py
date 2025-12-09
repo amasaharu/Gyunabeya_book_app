@@ -125,7 +125,7 @@ if "dict_book_info_before" in st.session_state:
                                                 ) == "公開する"                                                )
 
     # 確認用（完成品では消す）
-    st.write("登録内容（完成時は消す）:", dict_book_info_after)
+    # st.write("登録内容（完成時は消す）:", dict_book_info_after)
 
     # 登録ボタン
     if st.button("登録"):
