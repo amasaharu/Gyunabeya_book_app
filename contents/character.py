@@ -1,5 +1,9 @@
 import streamlit as st
 import pandas as pd
+
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from supabase import create_client, Client
 from utils.update_evolution import update_evolution
 from utils.generate_monster_prompt import generate_monster_prompt
@@ -30,6 +34,18 @@ keys_to_show = list(label_map.keys())
 
 # ユーザーID入力
 user_id_text = "test_user_osugi"
+
+bg_url = "https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/character_background_5.png"
+st.markdown(f"""
+<style>
+.stApp {{
+    background-image: url("{bg_url}");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}}
+</style>
+""", unsafe_allow_html=True)
 
 # Supabaseからユーザーのキャラクターデータを取得
 response = supabase.table("character").select("*").eq("user_id_text", user_id_text).execute()
@@ -63,9 +79,9 @@ frame_url = "https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/m
 # 画像表示
 st.markdown(
     f"""
-    <div style="position:relative; width:600px; height:600px; margin:auto; overflow:hidden;">
+    <div style="position:relative; width:100%; max-width:600px; aspect-ratio:1/1; margin:auto; overflow:hidden;">
         <img src="{frame_url}" style="width:100%; height:100%; position:absolute; top:0; left:0; z-index:2;">
-        <img src="{monster_url}" style="width:80%; height:80%; object-fit:cover; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:2;">
+        <img src="{monster_url}" style="width:80%; height:80%; object-fit:contain; position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); z-index:3;">
     </div>
     """,
     unsafe_allow_html=True
@@ -206,82 +222,64 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-if row:    
-    # その下にテーブル表示
-    filtered_row = {label_map[k]: row.get(k, None) for k in keys_to_show}
-    df = pd.DataFrame({
-        "項目": list(filtered_row.keys()),
-        "値": list(filtered_row.values())
-    }).set_index("項目")
-
-#    st.success("キャラクターパラメータ")
-    st.dataframe(df, use_container_width=True)
-
-st.markdown(
-    """
-    <style>
-    .tight-table td, .tight-table th {
-        padding: 4px 8px;
-        font-size: 0.9rem;
-    }
-    </style>
-    <table class="tight-table" style="margin:auto;">
-        <tr><th>項目</th><th>値</th></tr>
-        <tr><td>攻撃</td><td>1</td></tr>
-        <tr><td>防御</td><td>1</td></tr>
-        <tr><td>素早さ</td><td>1</td></tr>
-        <tr><td>魅力</td><td>1</td></tr>
-        <tr><td>知力</td><td>1</td></tr>
-        <tr><td>集中</td><td>1</td></tr>
-        <tr><td>魔力</td><td>1</td></tr>
-        <tr><td>閃き</td><td>1</td></tr>
-        <tr><td>愛情</td><td>1</td></tr>
-        <tr><td>運</td><td>1</td></tr>
-    </table>
-    """,
-    unsafe_allow_html=True
-)
-
 
 import plotly.graph_objects as go
+import streamlit as st
 
 labels = [label_map[k] for k in keys_to_show]
 values = [row.get(k, 0) for k in keys_to_show]
-
-# labels = ["攻撃","防御","素早さ","魅力","知力","集中","魔力","閃き","愛情","運"]
-# values = [3,5,2,7,4,6,1,8,5,9]
-
 
 # 最大値を動的に決定（例：次の10単位に丸める）
 max_val = max(values)
 axis_max = ((max_val // 10) + 1) * 10
 
+# レーダーチャート
 fig = go.Figure(
     data=go.Scatterpolar(
         r=values + [values[0]],   # 最初に戻る
         theta=labels + [labels[0]],
+        mode="none",              # 線やマーカーなしで塗りつぶしのみ
         fill='toself',
-        line=dict(color="#b08d57")
+        fillcolor="rgba(197,145,14,0.75)"  # 魔法陣風の濃い光
     )
 )
 
+# レイアウト調整（レスポンシブ対応）
 fig.update_layout(
-    width=700,
-    height=700,
+    autosize=True,                # 自動サイズ調整
+    margin=dict(l=20, r=20, t=40, b=20),  # 余白を小さめに
+    paper_bgcolor="rgba(0,0,0,0)",   # 背景透過
+    plot_bgcolor="rgba(0,0,0,0)",    # プロット領域も透過
     polar=dict(
-        bgcolor="rgba(0,0,0,0)",
+        bgcolor="rgba(93,83,83,0.1)",  # 石板風の背景
         radialaxis=dict(
             visible=True,
             range=[0, axis_max],
             tickvals=list(range(0, axis_max+1, 2)),
             ticktext=[str(v) for v in range(0, axis_max+1, 2)],
-            tickfont=dict(size=14, color="black")
+            tickfont=dict(size=16, color="#a67c52", family="serif"),  # 少し小さめに
+            showline=True,
+            linecolor="#9E8060",   # 軸線を金属色に
+            gridcolor="rgba(70,51,23,0.5)"  # グリッドを濃いめの金色に
         ),
         angularaxis=dict(
-            tickfont=dict(size=16, color="black")
+            tickfont=dict(size=16, color="#3D250A", family="serif")  # ラベルも羊皮紙風
         )
     ),
     showlegend=False
 )
 
+# Streamlitに表示（レスポンシブ）
 st.plotly_chart(fig, use_container_width=True)
+
+# フォントサイズを画面幅に応じて調整（CSSメディアクエリ）
+st.markdown("""
+<style>
+@media (max-width: 600px) {
+    .js-plotly-plot .xtick text,
+    .js-plotly-plot .ytick text {
+        font-size: 12px !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
