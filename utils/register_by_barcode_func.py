@@ -20,28 +20,33 @@ def barcode_scanner(placeholder):
     frame = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
     frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    frame_gray = cv2.equalizeHist(frame_gray)
-    # frame_gray = cv2.GaussianBlur(frame_gray, (3,3), 0)
-    # _, frame_bin = cv2.threshold(frame_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    # グレースケールよりもカラーの方が読取り成功しやすい感じなので廃止
+    # frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY) # グレースケール変換
+    # frame_gray = cv2.equalizeHist(frame_gray) # ヒストグラム均一化でコントラスト強調
+    # frame_gray = cv2.GaussianBlur(frame_gray, (3,3), 0) # ノイズ除去のための平滑化
 
     barcode_reader = cv2.barcode.BarcodeDetector()
 
     try:
-        ok, decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame_gray)
+        ok, decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame_rgb)
     except ValueError:
-        decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame_gray)
+        decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame_rgb)
         ok = bool(decoded_info)
+
+    st.write(f"検出されたバーコード: {decoded_info}")
 
     isbn_code = None
     if decoded_info:
+        # decoded_info が文字列ならリストに変換
+        if isinstance(decoded_info, str):
+            decoded_info = [decoded_info]
+
         for code in decoded_info:
             if code.startswith(('978', '979')):
                 isbn_code = code
                 break
 
-    placeholder.image(img_file_buffer, channels="RGB")
-    # placeholder.image(frame_gray, channels="GRAY")
+    placeholder.image(frame_rgb, channels="RGB")
 
     # 撮影したがバーコードが見つからなかった場合は "" を返す
     return isbn_code if isbn_code else ""
