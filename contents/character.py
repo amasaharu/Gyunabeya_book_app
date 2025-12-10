@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from supabase import create_client, Client
 from utils.update_evolution import update_evolution
@@ -33,7 +33,7 @@ label_map = {
 keys_to_show = list(label_map.keys())
 
 # ユーザーID入力
-user_id_text = "test_user_osugi"
+user_id_text = st.session_state["username"]
 
 bg_url = "https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/character_background_7.PNG"
 st.markdown(f"""
@@ -211,7 +211,7 @@ if st.session_state.get("show_overlay", False):
     </style>
     <div class="overlay">
         <video autoplay muted loop>
-            <source src="https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/summon_1.mp4" type="video/mp4">
+            <source src="https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/summon_1_compressed.webm" type="video/webm">
         </video>
     </div>
     """, unsafe_allow_html=True)
@@ -231,11 +231,8 @@ if st.session_state.get("show_overlay", False):
             image_url, image_stream = create_monster_fig(prompt_image, character_name)
 
             evolution_count = updated_row.get("evolution_count", 0)
-            file_name = f"{updated_row['user_id_text']}_{evolution_count}.png"
-            with open(file_name, "wb") as f:
-                f.write(image_stream.getbuffer())
-
-            new_url = upload_monster_image(file_name, updated_row["user_id_text"], evolution_count)
+            file_name = f"{updated_row['user_id_text']}_{evolution_count}.jpg"
+            new_url = upload_monster_image(image_stream, updated_row["user_id_text"], evolution_count)
 
             # 完了したら overlay を消す
             st.session_state["show_overlay"] = False
