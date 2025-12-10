@@ -2,63 +2,105 @@ import requests
 import cv2
 import re
 import xmltodict
+import numpy as np
+import streamlit as st
 
 # 本のバーコードを読取って、ISBNコードを返す関数
-# 参考：https://js2iiu.com/2025/01/08/streamlit-barcode-api/
+# cv2.VideoCapture(0) を使う方法はデプロイ時に動かないため、Streamlitのカメラ入力コンポーネントを使用する方法に変更
 def barcode_scanner(placeholder):
+    img_file_buffer = st.camera_input("カメラでバーコードを読み取ってください", key="camera_input")
 
-    # カメラデバイスに接続（0は内蔵カメラ）
-    cap = cv2.VideoCapture(0)
-    # 解像度を高めに設定（1280x720）
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    if img_file_buffer is None:
+        # 撮影していない
+        return None
 
-    # バーコードリーダーを作成
+    # 撮影済み → OpenCVで処理
+    bytes_data = img_file_buffer.getvalue()
+    np_array = np.frombuffer(bytes_data, np.uint8)
+    frame = cv2.imdecode(np_array, cv2.IMREAD_COLOR)
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    frame_gray = cv2.equalizeHist(frame_gray)
+    # frame_gray = cv2.GaussianBlur(frame_gray, (3,3), 0)
+    # _, frame_bin = cv2.threshold(frame_gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
     barcode_reader = cv2.barcode.BarcodeDetector()
 
-    # 検出されたバーコード情報を格納する集合
-    detected_codes = set()
+    try:
+        ok, decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame_gray)
+    except ValueError:
+        decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame_gray)
+        ok = bool(decoded_info)
+
     isbn_code = None
+    if decoded_info:
+        for code in decoded_info:
+            if code.startswith(('978', '979')):
+                isbn_code = code
+                break
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+    placeholder.image(img_file_buffer, channels="RGB")
+    # placeholder.image(frame_gray, channels="GRAY")
 
-        # 表示用（カラー） OpenCVはBGRフォーマットなので、RGBに変換
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    # 撮影したがバーコードが見つからなかった場合は "" を返す
+    return isbn_code if isbn_code else ""
 
-        # 検出用（グレースケール）
-        frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        # バーコード情報を取得
-        try:
-            # バーコード検出（グレースケールで処理）
-            ok, decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame_gray) # type: ignore
-        except ValueError:
-            decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame_gray)
-            ok = bool(decoded_info)
+# def barcode_scanner(placeholder):
 
-        if len(decoded_info) > 2:
-            detected_codes.add(f'{decoded_info}')
+#     # カメラデバイスに接続（0は内蔵カメラ）
+#     cap = cv2.VideoCapture(0)
+#     # 解像度を高めに設定（1280x720）
+#     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+#     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
-        # プレースホルダーに画像を表示（カラー映像）
-        placeholder.image(frame_rgb, channels="RGB")
+#     # バーコードリーダーを作成
+#     barcode_reader = cv2.barcode.BarcodeDetector()
 
-        # バーコードが検出されたらループを終了
-        if len(detected_codes) >= 2:
-            for code in detected_codes:
-                if code.startswith(('978', '979')):  # ISBNは978 または 979 で始まる
-                    isbn_code = code
-                    break
+#     # 検出されたバーコード情報を格納する集合
+#     detected_codes = set()
+#     isbn_code = None
 
-            # カメラ映像を消す
-            placeholder.empty()
-            break
+#     while True:
+#         ret, frame = cap.read()
+#         if not ret:
+#             break
 
-    cap.release()
+#         # 表示用（カラー） OpenCVはBGRフォーマットなので、RGBに変換
+#         frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    return isbn_code
+#         # 検出用（グレースケール）
+#         frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+#         # バーコード情報を取得
+#         try:
+#             # バーコード検出（グレースケールで処理）
+#             ok, decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame_gray) # type: ignore
+#         except ValueError:
+#             decoded_info, decoded_type, corners = barcode_reader.detectAndDecode(frame_gray)
+#             ok = bool(decoded_info)
+
+#         if len(decoded_info) > 2:
+#             detected_codes.add(f'{decoded_info}')
+
+#         # プレースホルダーに画像を表示（カラー映像）
+#         placeholder.image(frame_rgb, channels="RGB")
+
+#         # バーコードが検出されたらループを終了
+#         if len(detected_codes) >= 2:
+#             for code in detected_codes:
+#                 if code.startswith(('978', '979')):  # ISBNは978 または 979 で始まる
+#                     isbn_code = code
+#                     break
+
+#             # カメラ映像を消す
+#             placeholder.empty()
+#             break
+
+#     cap.release()
+
+#     return isbn_code
 
 
 # 著者名を成形する関数
