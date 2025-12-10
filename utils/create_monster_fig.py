@@ -1,3 +1,4 @@
+from PIL import Image
 import requests
 import io
 import streamlit as st
@@ -39,4 +40,13 @@ def create_monster_fig(prompt_image: str, monster_name: str) -> tuple[str, io.By
     response = requests.get(image_url)
     image_stream = io.BytesIO(response.content)
 
-    return image_url, image_stream
+    # Pillowで開いて 512x512 に縮小
+    img = Image.open(image_stream)
+    img_resized = img.resize((512, 512))
+
+    # JPEG形式で圧縮保存
+    compressed_stream = io.BytesIO()
+    img_resized.save(compressed_stream, format="JPEG", quality=85)
+    compressed_stream.seek(0)
+
+    return image_url, compressed_stream
