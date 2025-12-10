@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 
 import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from supabase import create_client, Client
 from utils.update_evolution import update_evolution
