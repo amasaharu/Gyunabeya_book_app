@@ -1,6 +1,7 @@
 import streamlit as st
 from datetime import datetime, timezone, timedelta
 from supabase import create_client, Client
+from streamlit_webrtc import webrtc_streamer
 
 from utils.register_by_barcode_func import barcode_scanner, get_api_book_info
 from utils.parameter_update import apply_parameter_update
@@ -63,32 +64,28 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# アプリ処理開始
 st.title('本のバーコードから登録・編集')
 
-# 初回のみカメラ起動してISBNを取得
 if "isbn_code" not in st.session_state:
-    # カメラ映像を配置するプレースホルダーを作成
     camera_placeholder = st.empty()
-
-    # 別ファイルで定義しているbarcode_scanner関数を呼び出してISBNコードを取得
     isbn_code = barcode_scanner(camera_placeholder)
 
-    # 結果表示
-    if isbn_code:
+    if isbn_code is None:
+        # まだ撮影していない → 何も表示しない
+        pass
+    elif isbn_code == "":
+        # 撮影したが失敗
+        st.warning("ISBNを読み取れませんでした。")
+        # 手入力用テキストボックスを表示
+        manual_isbn = st.text_input("ISBNコードを手入力してください")
+        # 入力があればそれを利用
+        if manual_isbn:
+            st.session_state["isbn_code"] = manual_isbn
+            st.success(f'登録する本のISBN: {manual_isbn}')
+    else:
+        # 成功
         st.session_state["isbn_code"] = isbn_code
         st.success(f'登録する本のISBN: {isbn_code}')
-    else:
-        st.warning("ISBNを読み取れませんでした。")
-
-        # 再試行ボタン
-        if st.button("再試行"):
-            isbn_code = barcode_scanner(camera_placeholder)
-            if isbn_code:
-                st.session_state["isbn_code"] = isbn_code
-                st.success(f'登録する本のISBN: {isbn_code}')
-            else:
-                st.error("再試行してもISBNを読み取れませんでした。")
 
 # ISBNが取得できていれば書誌情報を取得（初回のみ）
 if "isbn_code" in st.session_state and "dict_book_info_before" not in st.session_state:
