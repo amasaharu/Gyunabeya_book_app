@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 from supabase import create_client, Client
 import sys
-
+from utils.parameter_update import apply_parameter_update
 # =================================================================
 # 💡 ステータス対応表の定義
 # =================================================================
@@ -258,7 +258,7 @@ def display_book_detail(book_id):
             # データベースに書き込むデータ辞書を定義
             update_data = {
                 # 1. prev_statusを新しい数値で更新
-                "prev_status": new_numerical_status, 
+                "prev_status": current_numerical_status, 
                 # 2. new_statusも新しい数値で更新
                 "new_status": new_numerical_status,
                 # 3. read_status (日本語カラム) をシンプルな日本語で更新 (例: 読了)
@@ -270,8 +270,10 @@ def display_book_detail(book_id):
                 .update(update_data) \
                 .eq("book_id", book_id) \
                 .execute()
+
+            char, updated, msg = apply_parameter_update(current_user_id, book_detail['genre'], current_numerical_status, new_numerical_status, book_detail['pages'])
+
             st.success(f"ステータスが {new_japanese_status_simple} ({new_numerical_status}) に正常に更新されました！")
-            
             st.rerun() 
             
         except Exception as e:
@@ -302,6 +304,7 @@ if 'username' not in st.session_state:
 
 # 💡 user_id をセッションステートの 'username' から直接取得
 current_user_id = st.session_state['username'] 
+# current_user_id = None
 
 
 # === 画面の切り替え処理 ===
