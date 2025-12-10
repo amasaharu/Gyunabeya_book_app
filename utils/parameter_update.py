@@ -84,11 +84,17 @@ def apply_parameter_update(
         else:
             updated[key] = value
 
-    # evolution更新
-    if "evolution" in char and isinstance(char["evolution"], (int, float)):
-        updated["evolution"] = char["evolution"] + pages
+    # evolution更新（条件付き）
+    valid_transitions = {(0, 2), (0, 3), (1, 2), (1, 3)}
+
+    if (prev_status, new_status) in valid_transitions:
+        if "evolution" in char and isinstance(char["evolution"], (int, float)):
+            updated["evolution"] = char["evolution"] + pages
+        else:
+            updated["evolution"] = pages
     else:
-        updated["evolution"] = pages
+        # 進化値はそのまま維持
+        updated["evolution"] = char.get("evolution", 0)
 
     # 新しいステータスを更新
     updated["status"] = new_status
