@@ -183,38 +183,72 @@ mapping_rows = supabase.table("species_mapping").select("*").execute().data
 col1, col2, col3 = st.columns([4, 2, 4])
 with col2:
     disabled_flag = evolution_value < 1000
+
     if st.button("進化する", disabled=disabled_flag):
-        # 1. revolution値を減らす
+        st.session_state["show_overlay"] = True
+        st.session_state["generating"] = True
+        st.rerun()
+# overlay 表示
+if st.session_state.get("show_overlay", False):
+    st.markdown("""
+    <style>
+    .overlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.8);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .overlay video {
+        max-width: 80%;
+        max-height: 80%;
+        border: 3px solid gold;
+        box-shadow: 0 0 20px gold;
+    }
+    </style>
+    <div class="overlay">
+        <video autoplay muted loop>
+            <source src="https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/summon_1.mp4" type="video/mp4">
+        </video>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 生成処理を overlay 中に実行
+    if st.session_state.get("generating", False):
         updated_row = update_evolution(row, decrement=1000)
         if updated_row:
-            # st.success("evolution値を更新しました！")
-
-            # ステータスを日本語表現に変換
             description = convert_status_to_japanese(updated_row)
-            # st.write(description)
-
             prompt_image, prompt_name = generate_monster_prompt(filtered_row, mapping_rows, description)
-            # st.write("生成プロンプト:", prompt_image)
-
             character_name = create_character_name(prompt_name)
-            # st.write("生成された名前:", character_name)
 
-            supabase.table("character").update({"character_name": character_name}).eq("user_id_text", updated_row["user_id_text"]).execute()
+            supabase.table("character").update(
+                {"character_name": character_name}
+            ).eq("user_id_text", updated_row["user_id_text"]).execute()
 
             image_url, image_stream = create_monster_fig(prompt_image, character_name)
 
-            # ファイル保存（Supabaseアップロード用）
             evolution_count = updated_row.get("evolution_count", 0)
             file_name = f"{updated_row['user_id_text']}_{evolution_count}.png"
             with open(file_name, "wb") as f:
                 f.write(image_stream.getbuffer())
 
-            # 画像アップロード＆URL更新
             new_url = upload_monster_image(file_name, updated_row["user_id_text"], evolution_count)
-            # st.write("新しい画像URL:", new_url)
 
+            # 完了したら overlay を消す
+            st.session_state["show_overlay"] = False
+            st.session_state["generating"] = False
             st.rerun()
 
+st.markdown(
+    """
+    <div style='width:100%; height:8px;'></div>
+    """,
+    unsafe_allow_html=True
+)
+ 
 st.markdown(
     """
     <div style='width:100%; height:8px;'></div>
@@ -270,7 +304,7 @@ fig.update_layout(
 )
 
 # Streamlitに表示（レスポンシブ）
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 # フォントサイズを画面幅に応じて調整（CSSメディアクエリ）
 st.markdown("""
@@ -283,3 +317,30 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
+
+if st.session_state.get("show_overlay", False):
+    st.markdown("""
+    <style>
+    .overlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.8); /* 黒半透明 */
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .overlay video {
+        max-width: 80%;
+        max-height: 80%;
+        border: 3px solid gold;
+        box-shadow: 0 0 20px gold;
+    }
+    </style>
+    <div class="overlay">
+        <video autoplay muted>
+            <source src="https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/summon_5.mp4" type="video/mp4">
+        </video>
+    </div>
+    """, unsafe_allow_html=True)

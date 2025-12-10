@@ -20,6 +20,10 @@ credentials:
       email: a.masaharu0712@gmail.com
       name: まさはる
       password: $2b$12$ytmkN2ysymEPiEwQAxM3s.g5uGWEtw7zFRWcWe/Y4LgsMpOAvq5la
+    test_user_osugi:
+      email: rupajiro1210@yahoo.co.jp
+      name: おすぎ
+      password: $2b$12$d8BMI3Qo1NYyvA7RCsj5DOlczyJOGZNvmp4HKYaOXuYiYhnuvCAg2
 login:
   fields:
     login: ログイン
