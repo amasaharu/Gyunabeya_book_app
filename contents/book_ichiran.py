@@ -6,7 +6,51 @@ import sys
 # =================================================================
 # 💡 ステータス対応表の定義
 # =================================================================
+# 背景画像設定
+bg_url = "https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/character_background_7.PNG"
+st.markdown(f"""
+<style>
+.stApp {{
+    background-image: url("{bg_url}");
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}}
+</style>
+""", unsafe_allow_html=True)
 
+# CSSでボタンを中央＆金色に
+st.markdown(
+    """
+    <style>
+    div.stButton > button:first-child {
+        display: block;       /* ブロック要素にする */
+        margin: 0 auto;       /* 左右の余白を自動にして中央寄せ */
+        background-color: #b8860b; /* dark goldenrod */
+        box-shadow: 0 0 5px #b8860b;
+        background: linear-gradient(
+        90deg,
+        #cfa94f 25%,
+        #e0c170 50%,
+        #cfa94f 75%
+        );
+        color: black;
+        font-weight: bold;
+        border-radius: 8px;
+        font-size: 1.6rem;
+        padding: 10px 20px;
+        border: none;
+    }
+    div.stButton > button:first-child:disabled {
+        background: #ccc !important;   /* ← グラデーションを完全に上書き */
+        color: #666 !important;
+        cursor: not-allowed;
+        box-shadow: none !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 # 数値から日本語へのマップ
 STATUS_MAP_FULL = {
     0: "未読",
