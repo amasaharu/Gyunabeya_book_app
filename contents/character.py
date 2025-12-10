@@ -33,7 +33,7 @@ label_map = {
 keys_to_show = list(label_map.keys())
 
 # ユーザーID入力
-user_id_text = "test_user_osugi"
+user_id_text = st.session_state["username"]
 
 bg_url = "https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/character_background_7.PNG"
 st.markdown(f"""
