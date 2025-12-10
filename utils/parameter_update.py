@@ -96,9 +96,6 @@ def apply_parameter_update(
         # 進化値はそのまま維持
         updated["evolution"] = char.get("evolution", 0)
 
-    # 新しいステータスを更新
-    updated["status"] = new_status
-
     # DB更新
     supabase.table("character").update(updated).eq("user_id_text", user_id_text).execute()
 
