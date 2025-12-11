@@ -88,22 +88,23 @@ SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- ログイン中ユーザー ---
+# --- ログイン中ユーザー --- 
 user_id = st.session_state.get("user_id", None)
 user_name = st.session_state.get("name", "あなた")
 
-# --- 読書データ取得 ---
+# --- 読書データ取得関数 ---
 def get_book_stats(user_id):
     if user_id is None:
         return 0, 0
 
     result = supabase.table("book").select("pages").eq("user_id", user_id).execute()
-    if result.data is None:
+    if not result.data:
         return 0, 0
 
     pages = [row["pages"] for row in result.data]
     return len(pages), sum(pages)
 
+# --- ★ここで必ず取得する（重要） ---
 books_count, pages_sum = get_book_stats(user_id)
 
 # --- タイトル ---
