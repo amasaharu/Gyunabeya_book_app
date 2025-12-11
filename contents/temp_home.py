@@ -29,7 +29,6 @@ st.markdown("""
 }
 .icon { margin-right: 8px; }
 
-/* タイトル中央寄せ */
 .reading-title {
     text-align: center;
     margin-top: 20px;
@@ -37,15 +36,12 @@ st.markdown("""
     font-weight: bold;
 }
 
-/* スマホで文字サイズ縮小 */
 @media (max-width: 600px) {
     .reading-title { font-size: 20px; }
 }
 
-/* メトリクス全体を中央寄せ */
 .metric-wrapper { text-align: center; margin-top: 20px; font-size: 20px; }
 
-/* PC では横並び、スマホでは縦並び */
 .metric-flex {
     display: flex;
     justify-content: center;
@@ -90,29 +86,43 @@ SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ======================================================
-# 🟡 ここが最重要：ログイン中ユーザーの取得
-# streamlit-authenticator → "username" がログインID
+# 🟡 ログイン中ユーザー
 # ======================================================
-user_id = st.session_state.get("username")     # ← これが正しい！
+user_id = st.session_state.get("username")  # streamlit-authenticator のログインID
 user_name = st.session_state.get("name", "あなた")
 
-# --- 読書データ取得 ---
+
+# ======================================================
+# 🟢 読書データ取得（冊数：全件 / ページ数：読了のみ）
+# ======================================================
 def get_book_stats(user_id):
     if user_id is None:
         return 0, 0
 
-    result = (
+    # --- 全冊数 ---
+    result_all = (
         supabase.table("book")
-        .select("pages")
+        .select("*")
         .eq("user_id", user_id)
         .execute()
     )
+    books_count = len(result_all.data) if result_all.data else 0
 
-    if not result.data:
-        return 0, 0
+    # --- 読了のページ数 ---
+    result_read = (
+        supabase.table("book")
+        .select("pages")
+        .eq("user_id", user_id)
+        .eq("read_status", "読了")       # ★ 読了のみ
+        .execute()
+    )
 
-    pages = [row["pages"] for row in result.data]
-    return len(pages), sum(pages)
+    if not result_read.data:
+        return books_count, 0
+
+    pages_sum = sum([row["pages"] for row in result_read.data])
+    return books_count, pages_sum
+
 
 # --- 冊数とページ数を取得 ---
 books_count, pages_sum = get_book_stats(user_id)
@@ -120,14 +130,14 @@ books_count, pages_sum = get_book_stats(user_id)
 # --- タイトル ---
 st.markdown(
     f"""
-    <div class="reading-title">
-        📊 {user_name} さんの読書データ
-    </div>
-    """,
+<div class="reading-title">
+📊 {user_name} さんの読書データ
+</div>
+""",
     unsafe_allow_html=True
 )
 
-# --- メトリクス表示 ---
+# --- メトリクス表示（※インデントなし！HTML崩れ防止） ---
 html = f"""
 <div class="metric-wrapper">
 <div class="metric-flex">
@@ -138,7 +148,7 @@ html = f"""
 </div>
 
 <div>
-総ページ数
+読了総ページ数
 <div class="metric-value">{pages_sum} ページ</div>
 </div>
 
