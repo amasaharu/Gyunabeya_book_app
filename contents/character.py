@@ -266,6 +266,12 @@ values = [row.get(k, 0) for k in keys_to_show]
 max_val = max(values)
 axis_max = ((max_val // 10) + 1) * 10
 
+divisions = 6
+
+tick_step = axis_max / divisions
+tickvals = [tick_step * i for i in range(divisions+1)]
+ticktext = [str(int(round(v))) for v in tickvals]  # 綺麗に整数化
+
 # レーダーチャート
 fig = go.Figure(
     data=go.Scatterpolar(
@@ -280,7 +286,7 @@ fig = go.Figure(
 # レイアウト調整（レスポンシブ対応）
 fig.update_layout(
     autosize=True,                # 自動サイズ調整
-    margin=dict(l=20, r=20, t=40, b=20),  # 余白を小さめに
+    margin=dict(l=40, r=40, t=40, b=40),  # 余白を小さめに
     paper_bgcolor="rgba(0,0,0,0)",   # 背景透過
     plot_bgcolor="rgba(0,0,0,0)",    # プロット領域も透過
     polar=dict(
@@ -288,15 +294,15 @@ fig.update_layout(
         radialaxis=dict(
             visible=True,
             range=[0, axis_max],
-            tickvals=list(range(0, axis_max+1, 2)),
-            ticktext=[str(v) for v in range(0, axis_max+1, 2)],
+            tickvals=tickvals,
+            ticktext=ticktext,
             tickfont=dict(size=16, color="#a67c52", family="serif"),  # 少し小さめに
             showline=True,
             linecolor="#9E8060",   # 軸線を金属色に
             gridcolor="rgba(70,51,23,0.5)"  # グリッドを濃いめの金色に
         ),
         angularaxis=dict(
-            tickfont=dict(size=16, color="#3D250A", family="serif")  # ラベルも羊皮紙風
+            tickfont=dict(size=16, color="#3D250A", family="serif"),  # ラベルも羊皮紙風
         )
     ),
     showlegend=False
