@@ -11,7 +11,11 @@ credentials:
     TKHR:
       email: tsuka-chan@example.com
       name: つかちゃん
-      password: $2b$12$QTHEm/o5cIzsDPQl7.sI4eqA.UtKbrf8OVEKydYPTGkjnxFaQDqFK
+      password: $2b$12$YdCo2axxeh.g1JltKSv9duk0Oz1BG0Q4W/jOL9wbtlfCC5xo0b8Oa
+    Test:
+      email: test@example.com
+      name: テスト
+      password: $2b$12$fRKQ5NeiPN8nGPsrJGvr6uzEwGwWg3pK6FKi4LyrxV6nq0h/iIi7e
     a.masaharu:
       email: a.masaharu0712@gmail.com
       name: まさはる
