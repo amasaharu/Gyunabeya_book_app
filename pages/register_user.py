@@ -12,7 +12,7 @@ st.set_page_config(page_title="新規ユーザー登録")
 # =====================================================
 # 背景画像（失敗しても落ちない）
 # =====================================================
-bg_url = "https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/character_background_5.png"
+bg_url = "https://wmcppeiutkzrxrgwguvm.supabase.co/storage/v1/object/public/material/character_background_7.PNG"
 
 try:
     st.markdown(f"""
