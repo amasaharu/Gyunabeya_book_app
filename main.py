@@ -138,7 +138,11 @@ authenticator = stauth.Authenticate(
     cookie_key=config['cookie']['key'],
     cookie_expiry_days=config['cookie']['expiry_days'],
 )
-
+# --- 画像中央 ---
+left, center, right = st.columns([1, 2, 1])
+with center:
+    st.image("contents/画像1.png", width=650)
+    
 # ログインフォーム
 authenticator.login(
     location="main",

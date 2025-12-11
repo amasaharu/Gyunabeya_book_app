@@ -60,10 +60,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 画像中央 ---
-left, center, right = st.columns([1, 2, 1])
-with center:
-    st.image("contents/画像1.png", width=650)
 
 # --- ボタン横並び ---
 col1, col2, col3 = st.columns(3)

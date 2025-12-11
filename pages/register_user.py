@@ -82,6 +82,11 @@ div[data-testid="stForm"] button {
 </style>
 """, unsafe_allow_html=True)
 
+# --- 画像中央 ---
+left, center, right = st.columns([1, 2, 1])
+with center:
+    st.image("contents/画像1.png", width=650)
+
 st.title("新規ユーザー登録")
 
 # =====================================================
