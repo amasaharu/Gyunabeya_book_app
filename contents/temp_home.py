@@ -1,4 +1,6 @@
 import streamlit as st
+from supabase import create_client, Client
+
 st.set_page_config(page_title="Book App", layout="centered")
 
 # --- CSS ---
@@ -27,6 +29,7 @@ st.markdown("""
 }
 .icon { margin-right: 8px; }
 
+/* タイトル中央寄せ */
 .reading-title {
     text-align: center;
     margin-top: 20px;
@@ -34,16 +37,15 @@ st.markdown("""
     font-weight: bold;
 }
 
+/* スマホで文字サイズ縮小 */
 @media (max-width: 600px) {
     .reading-title { font-size: 20px; }
 }
 
-.metric-wrapper {
-    text-align: center;
-    margin-top: 20px;
-    font-size: 20px;
-}
+/* メトリクス全体を中央寄せ */
+.metric-wrapper { text-align: center; margin-top: 20px; font-size: 20px; }
 
+/* PC では横並び、スマホでは縦並び */
 .metric-flex {
     display: flex;
     justify-content: center;
@@ -83,37 +85,45 @@ with col3:
         st.switch_page("contents/character.py")
 
 # --- Supabase 接続 ---
-from supabase import create_client, Client
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# --- ログイン中ユーザー --- 
-user_id = st.session_state.get("user_id", None)
+# ======================================================
+# 🟡 ここが最重要：ログイン中ユーザーの取得
+# streamlit-authenticator → "username" がログインID
+# ======================================================
+user_id = st.session_state.get("username")     # ← これが正しい！
 user_name = st.session_state.get("name", "あなた")
 
-# --- 読書データ取得関数 ---
+# --- 読書データ取得 ---
 def get_book_stats(user_id):
     if user_id is None:
         return 0, 0
 
-    result = supabase.table("book").select("pages").eq("user_id", user_id).execute()
+    result = (
+        supabase.table("book")
+        .select("pages")
+        .eq("user_id", user_id)
+        .execute()
+    )
+
     if not result.data:
         return 0, 0
 
     pages = [row["pages"] for row in result.data]
     return len(pages), sum(pages)
 
-# --- ★ここで必ず取得する（重要） ---
+# --- 冊数とページ数を取得 ---
 books_count, pages_sum = get_book_stats(user_id)
 
 # --- タイトル ---
 st.markdown(
     f"""
-<div class="reading-title">
-    📊 {user_name} さんの読書データ
-</div>
-""",
+    <div class="reading-title">
+        📊 {user_name} さんの読書データ
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
@@ -123,13 +133,13 @@ html = f"""
 <div class="metric-flex">
 
 <div>
-    登録した冊数
-    <div class="metric-value">{books_count} 冊</div>
+登録した冊数
+<div class="metric-value">{books_count} 冊</div>
 </div>
 
 <div>
-    総ページ数
-    <div class="metric-value">{pages_sum} ページ</div>
+総ページ数
+<div class="metric-value">{pages_sum} ページ</div>
 </div>
 
 </div>
