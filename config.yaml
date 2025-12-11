@@ -20,10 +20,42 @@ credentials:
       email: a.masaharu0712@gmail.com
       name: まさはる
       password: $2b$12$XzOa/ua2DXOjPGEq0whdquDJaHwPNRvoTqqUhl/q533qN1Rs2qlRW
+    angel:
+      email: rupajiro1210@yahoo.co.jp
+      name: angel
+      password: $2b$12$RtbZDAt8kUBHmn6n4bTTuuu1HRYwPsLGTlF1RLZE6OCFS1HhhVlfa
+    cat:
+      email: rupajiro1210@yahoo.co.jp
+      name: cat
+      password: $2b$12$kZ90YAowmtsdY9AgWns6t.CpAiWeojbtvbvjyKetXZ/U8mB1CeFgO
+    darkness:
+      email: rupajiro1210@yahoo.co.jp
+      name: darkness
+      password: $2b$12$TVz2zaXTPDkjSud7UG/jguGQSNFqEvAMcWh6HV5hbwYJZ8O9K5.jy
+    dragon:
+      email: rupajiro1210@yahoo.co.jp
+      name: dragon
+      password: $2b$12$qoHSRFbMhWgMnynJdOG89.52fLWblvh4jHs7/cJF4lYYZ70.uD2lG
+    golem:
+      email: rupajiro1210@yahoo.co.jp
+      name: golem
+      password: $2b$12$/q352TA6PP8GNwYzoPsZheiIMAOUR0Pt2i5bRqDvjsWGFDvc4wb1e
+    hunter:
+      email: rupajiro1210@yahoo.co.jp
+      name: hunter
+      password: $2b$12$BlGsXu6fkJ/Krsr1niF2TO5s.GDTgShS1wlOmj7I90RamxbYFSdBy
     masaharu:
       email: a.masaharu0712@gmail.com
       name: まさはる
       password: $2b$12$ytmkN2ysymEPiEwQAxM3s.g5uGWEtw7zFRWcWe/Y4LgsMpOAvq5la
+    mystic:
+      email: rupajiro1210@yahoo.co.jp
+      name: mystic
+      password: $2b$12$9TNiQ5E2OQ1pa99z3VV67O/LHLqkMrDItHF8hlNlyuKVvjqDi7O0C
+    robot:
+      email: rupajiro1210@yahoo.co.jp
+      name: robot
+      password: $2b$12$6SrRO6Hv3CV0xdkoJhTU6OfLQdQl6RRrlptJtJ.9Sn2ckTXnLkOwS
     test_user_osugi:
       email: rupajiro1210@yahoo.co.jp
       name: おすぎ
