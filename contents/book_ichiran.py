@@ -214,79 +214,83 @@ def display_book_detail(book_id):
     df_detail = pd.DataFrame.from_dict(display_data, orient='index', columns=['値'])
     st.table(df_detail)
 
-
     # ----------------- 2. ステータスの確認・更新 (数値ベース) -----------------
     st.subheader("ステータスの確認・更新")
 
-    # 💡 prev_status (数値) を取得し、シンプルな日本語に変換して表示
     current_numerical_status = book_detail.get('prev_status', 0)
     current_japanese_status_simple = STATUS_MAP_SIMPLE.get(current_numerical_status, '不明')
-    
-    # 詳細画面では、prev_statusの数値と、そのシンプルな日本語を併記
+
     st.info(f"現在のステータス (prev_status): **{current_japanese_status_simple} ({current_numerical_status})**")
 
-
-    # 💡 新ステータスの選択肢を日本語にする (詳細な日本語を使用)
-    status_options_japanese = list(STATUS_REVERSE_MAP.keys()) 
-    
-    # new_status (数値) を元に、初期選択肢の日本語（詳細）を取得
+    status_options_japanese = list(STATUS_REVERSE_MAP.keys())
     initial_japanese_status = STATUS_MAP_FULL.get(book_detail.get('new_status', 0), '未読')
-    
+
     if initial_japanese_status not in status_options_japanese:
-        # マップ外の値の場合の安全策
-        initial_japanese_status = '未読' 
-        
+        initial_japanese_status = '未読'
+
     initial_index = status_options_japanese.index(initial_japanese_status)
 
-    
     new_japanese_status_full = st.selectbox(
         "新しいステータスを選択してください",
         options=status_options_japanese,
         index=initial_index
     )
-    
-    # 選択された日本語（詳細）を、データベースに書き込む数値 (0, 1, 2, 3) に変換
+
     new_numerical_status = STATUS_REVERSE_MAP.get(new_japanese_status_full)
-    
-    # 💡 read_statusに書き込むシンプルな日本語を決定
     new_japanese_status_simple = STATUS_MAP_SIMPLE.get(new_numerical_status, '不明')
 
-
     if st.button("✅ ステータスを更新する"):
-        
         try:
-            # データベースに書き込むデータ辞書を定義
             update_data = {
-                # 1. prev_statusを新しい数値で更新
-                "prev_status": current_numerical_status, 
-                # 2. new_statusも新しい数値で更新
+                "prev_status": current_numerical_status,
                 "new_status": new_numerical_status,
-                # 3. read_status (日本語カラム) をシンプルな日本語で更新 (例: 読了)
-                "read_status": new_japanese_status_simple, 
+                "read_status": new_japanese_status_simple,
             }
-            
-            # Supabaseの更新処理
+
             supabase.table("book") \
                 .update(update_data) \
                 .eq("book_id", book_id) \
                 .execute()
 
-            char, updated, msg = apply_parameter_update(current_user_id, book_detail['genre'], current_numerical_status, new_numerical_status, book_detail['pages'])
+            char, updated, msg = apply_parameter_update(
+                current_user_id,
+                book_detail['genre'],
+                current_numerical_status,
+                new_numerical_status,
+                book_detail['pages']
+            )
 
             st.success(f"ステータスが {new_japanese_status_simple} ({new_numerical_status}) に正常に更新されました！")
-            st.rerun() 
-            
+            st.rerun()
+
         except Exception as e:
             st.error(f"ステータスの更新中にエラーが発生しました: {e}")
 
+    # ----------------- 3. レビューの編集 -----------------
+    st.subheader("レビューの編集")
+
+    current_review = book_detail.get('review', '') or ''
+    new_review = st.text_area("レビューを入力してください", value=current_review, height=200)
+
+    if st.button("💾 レビューを保存する"):
+        try:
+            supabase.table("book") \
+                .update({"review": new_review}) \
+                .eq("book_id", book_id) \
+                .execute()
+
+            st.success("レビューが正常に保存されました！")
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"レビューの保存中にエラーが発生しました: {e}")
 
     st.markdown("---")
-    
+
     if st.button("↩️ 一覧に戻る"):
         st.session_state['page'] = 'list'
-        st.session_state['selected_book_id'] = None 
-        st.rerun() 
-
+        st.session_state['selected_book_id'] = None
+        st.rerun()
 
 # =================================================================
 # メインロジック（画面切り替え処理）
