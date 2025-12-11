@@ -4,8 +4,8 @@ import streamlit_authenticator as stauth
 import yaml
 from yaml.loader import SafeLoader
 
-if "page" in st.session_state and st.session_state["page"] == "main":
-    pass
+# if "page" in st.session_state and st.session_state["page"] == "main":
+#     pass
 
 st.markdown("""
 <style>
@@ -155,7 +155,8 @@ status = st.session_state.get("authentication_status")
 if status:
     with st.sidebar:
         st.markdown(f'## ようこそ、 *{st.session_state.get("name", "")}* さん')
-        authenticator.logout('ログアウト', 'sidebar')
+        if authenticator.logout('ログアウト', 'sidebar'):
+            st.experimental_rerun()
         st.divider()
     # st.write('# ログインしました!')
 

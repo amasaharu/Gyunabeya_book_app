@@ -165,6 +165,7 @@ if submitted:
                             st.error("config.yaml の書き込みに失敗しました")
 
                         # セッション
+                        new_username = new_username.lower()
                         st.session_state["user_id"] = new_username
 
                         # Supabase 登録
@@ -182,5 +183,6 @@ if submitted:
 # 戻るボタン
 # =====================================================
 if st.button("ログイン画面へ戻る"):
-    st.session_state["page"] = "main"
-    st.rerun()
+    # st.session_state["page"] = "main"
+    # st.rerun()
+    st.switch_page("main.py")

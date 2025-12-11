@@ -4,6 +4,63 @@ import re
 import xmltodict
 import numpy as np
 import streamlit as st
+import base64
+from openai import OpenAI
+
+
+# OpenAI Vision APIを使ってISBNをOCRで読み取る関数
+def extract_isbn_by_ocr(image_bytes: bytes) -> str | None:
+    """
+    画像からOpenAI Vision APIを使ってISBNテキストを抽出する。
+    ISBN-13（978または979で始まる13桁）を返す。見つからなければNone。
+    """
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+
+    # 画像をBase64エンコード
+    base64_image = base64.b64encode(image_bytes).decode("utf-8")
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": """この画像から書籍のISBNコードを読み取ってください。
+
+ISBNは通常「ISBN978-」や「ISBN979-」で始まる13桁の数字です。
+ハイフンを除いた13桁の数字のみを返してください。
+
+例: ISBN978-4-8443-6517-4 → 9784844365174
+
+ISBNが見つからない場合は「NOT_FOUND」と返してください。
+数字のみを返し、他の説明は不要です。"""
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{base64_image}",
+                            "detail": "high"  # 高解像度で読み取り
+                        }
+                    }
+                ]
+            }
+        ],
+        max_tokens=50
+    )
+
+    result = response.choices[0].message.content.strip()
+
+    # ISBNとして有効か確認（13桁で978または979で始まる）
+    if result and result != "NOT_FOUND":
+        # 数字以外を除去
+        isbn = re.sub(r'\D', '', result)
+        if len(isbn) == 13 and isbn.startswith(('978', '979')):
+            return isbn
+
+    return None
+
 
 # 本のバーコードを読取って、ISBNコードを返す関数
 # cv2.VideoCapture(0) を使う方法はデプロイ時に動かないため、Streamlitのカメラ入力コンポーネントを使用する方法に変更
@@ -25,6 +82,10 @@ def barcode_scanner(placeholder):
     # frame_gray = cv2.equalizeHist(frame_gray) # ヒストグラム均一化でコントラスト強調
     # frame_gray = cv2.GaussianBlur(frame_gray, (3,3), 0) # ノイズ除去のための平滑化
 
+    # 撮影画像を表示
+    placeholder.image(frame_rgb, channels="RGB")
+
+    # --- Step 1: OpenCVでバーコード検出を試みる ---
     barcode_reader = cv2.barcode.BarcodeDetector()
 
     try:
@@ -46,15 +107,30 @@ def barcode_scanner(placeholder):
                 isbn_code = code
                 break
 
-    placeholder.image(frame_rgb, channels="RGB")
+    # バーコードからISBNが取得できた場合はそれを返す
+    if isbn_code:
+        return isbn_code
 
-    # 撮影したがバーコードが見つからなかった場合は "" を返す
-    return isbn_code if isbn_code else ""
+    # --- Step 2: バーコード検出失敗 → OpenAI Vision OCRにフォールバック ---
+    st.info("バーコードからISBNを検出できませんでした。OCRで読み取りを試みています...")
+
+    try:
+        ocr_isbn = extract_isbn_by_ocr(bytes_data)
+        if ocr_isbn:
+            st.success(f"OCRでISBNを検出しました: {ocr_isbn}")
+            return ocr_isbn
+        else:
+            st.warning("OCRでもISBNを検出できませんでした。")
+    except Exception as e:
+        st.error(f"OCR処理中にエラーが発生しました: {e}")
+
+    # 撮影したがISBNが見つからなかった場合は "" を返す
+    return ""
 
 
 # def barcode_scanner(placeholder):
 
-#     # カメラデバイスに接続（0は内蔵カメラ）
+#     # カメラデバイスに接続（0は内蔵カメラ）← ローカルでしか動かない
 #     cap = cv2.VideoCapture(0)
 #     # 解像度を高めに設定（1280x720）
 #     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
