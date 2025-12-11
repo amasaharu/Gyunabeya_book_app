@@ -48,7 +48,7 @@ def generate_monster_prompt(
         stage_design = "成熟した風格、自信と落ち着きを兼ね備えた雰囲気を持つデザインにしてください。"
     else:
         stage = chosen["child"]
-        stage_design = "愛嬌があって可愛らしいデザインにしてください。"
+        stage_design = "愛嬌があって可愛らしく幼いデザインにしてください。"
 
     # 英語キーを日本語に変換する辞書
     status_labels = {
