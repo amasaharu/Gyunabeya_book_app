@@ -1,0 +1,48 @@
+st.markdown("""
+<style>
+
+/* サイドバー本体 */
+[data-testid="stSidebar"] {
+    position: relative !important;
+    background: rgba(60, 40, 20, 0.1) !important;
+    backdrop-filter: blur(6px);
+    overflow: visible !important;
+}
+
+/* 右側の金色ライン（明るさと深さの中間） */
+[data-testid="stSidebar"]::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -1px;
+    width: 3px;
+    height: 100%;
+
+    /* 中間の金色グラデーション */
+    background: linear-gradient(
+        to bottom,
+        rgba(210, 170, 90, 0.95),   /* 明るすぎず暗すぎず */
+        rgba(185, 145, 70, 0.9),
+        rgba(160, 120, 55, 0.85)
+    );
+
+    /* 光も中間の強さ */
+    box-shadow:
+        0 0 8px rgba(210, 170, 90, 0.7),
+        0 0 14px rgba(185, 145, 70, 0.45);
+
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+
+/* ヘッダー */
+[data-testid="stHeader"] {
+    background: transparent !important;
+    color: #333;
+    text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+}
+
+</style>
+""", unsafe_allow_html=True)
