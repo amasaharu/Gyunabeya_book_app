@@ -60,6 +60,10 @@ credentials:
       email: rupajiro1210@yahoo.co.jp
       name: おすぎ
       password: $2b$12$d8BMI3Qo1NYyvA7RCsj5DOlczyJOGZNvmp4HKYaOXuYiYhnuvCAg2
+    trick:
+      email: rupajiro1210@yahoo.co.jp
+      name: trick
+      password: $2b$12$xEGwnh7s/KD7pxzmXym5CeFrnAELBDkdeQJ3l0MLHkP.wrqjp3fIK
 login:
   fields:
     login: ログイン
